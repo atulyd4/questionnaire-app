@@ -231,9 +231,7 @@ const App = () => {
   return (
     <Container>
       <Typography variant="h4" gutterBottom>
-        General Information
-        {formData.text}
-
+        {covid_data?.item[page]?.text}
       </Typography>
       <DynamicForm data={formData[page]} formState={formState} handleChange={handleChange} />
       <Grid container spacing={2} justifyContent="space-between">
