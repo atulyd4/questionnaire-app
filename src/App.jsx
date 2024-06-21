@@ -1,7 +1,6 @@
 /* eslint-disable react/prop-types */
 // App.js
 import React, { useState } from 'react';
-import covid_data from './covid_data';
 import hdfc_data from './hdfc_data';
 import {
   Container,
@@ -15,7 +14,7 @@ import {
   Box
 } from '@mui/material';
 
-const formData = covid_data?.item;
+const formData = hdfc_data?.item;
 
 const DynamicForm = ({ data, formState, handleChange }) => {
 
@@ -223,15 +222,71 @@ const App = () => {
     }
   };
 
+  const generateQuestionnaireResponse = () => {
+    const responseItems = formData.map((section) => {
+      const answeredItems = section.item
+        .map((item) => {
+          const valueKey = `value${item.type.charAt(0).toUpperCase() + item.type.slice(1)}`;
+          const value = formState[item.linkId];
+
+          // If the value is empty, return null
+          if (!value) return null;
+
+          return {
+            linkId: item.linkId,
+            text: item.text,
+            answer: [{
+              [valueKey]: item.type === 'choice' ? {
+                code: value,
+                display: item.answerOption.find(opt => opt.valueCoding.code === value)?.valueCoding.display
+              } : value
+            }]
+          };
+        })
+        .filter(Boolean); // Filter out null values
+
+      // If there are no answered items in this section, return null
+      if (answeredItems.length === 0) return null;
+
+      return {
+        linkId: section.linkId,
+        text: section.text,
+        item: answeredItems
+      };
+    }).filter(Boolean); // Filter out null values
+
+    return {
+      resourceType: "QuestionnaireResponse",
+      meta: {
+        profile: [
+          "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaireresponse|3.0"
+        ],
+        tag: [
+          {
+            code: "lformsVersion: 36.1.3"
+          }
+        ]
+      },
+      status: "completed",
+      authored: new Date().toISOString(),
+      item: responseItems,
+      subject: {
+        reference: "Patient/e3b754c9-1e6c-4708-a8ae-851ddac7ca81",
+        display: "Jackie Bode"
+      }
+    };
+  };
+
+
   const handleSubmit = () => {
-    // Handle form submission
-    console.log('Form Submitted:', formState);
+    const questionnaireResponse = generateQuestionnaireResponse();
+    console.log('Questionnaire Response:', JSON.stringify(questionnaireResponse, null, 2));
   };
 
   return (
     <Container>
       <Typography variant="h4" gutterBottom>
-        {covid_data?.item[page]?.text}
+        {formData[page]?.text}
       </Typography>
       <DynamicForm data={formData[page]} formState={formState} handleChange={handleChange} />
       <Grid container spacing={2} justifyContent="space-between">
