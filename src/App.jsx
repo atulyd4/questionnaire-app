@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 // App.js
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import hdfc_data from './hdfc_data';
 import {
   Container,
@@ -11,7 +11,12 @@ import {
   Checkbox,
   Button,
   Grid,
-  Box
+  Box,
+  DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 
 const formData = hdfc_data?.item;
@@ -202,6 +207,9 @@ const DynamicForm = ({ data, formState, handleChange }) => {
 const App = () => {
   const [formState, setFormState] = useState({});
   const [page, setPage] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [questionnaireResponse, setQuestionnaireResponse] = useState(null);
+  const preRef = useRef(null);
 
   const handleChange = (linkId, value) => {
     setFormState((prevState) => ({
@@ -282,6 +290,24 @@ const App = () => {
     const questionnaireResponse = generateQuestionnaireResponse();
     console.log('Questionnaire Response:', JSON.stringify(questionnaireResponse, null, 2));
   };
+  const handleShowas = () => {
+    const response = generateQuestionnaireResponse();
+    setQuestionnaireResponse(response);
+    setModalOpen(true);
+  };
+
+  const handleClose = () => {
+    setModalOpen(false);
+  };
+
+  const handleCopyToClipboard = () => {
+    const textToCopy = JSON.stringify(questionnaireResponse, null, 2);
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      console.log('Copied to clipboard');
+    }).catch((err) => {
+      console.error('Failed to copy: ', err);
+    });
+  };
 
   return (
     <Container>
@@ -308,9 +334,34 @@ const App = () => {
             <Button variant="contained" onClick={handleSubmit}>
               Submit
             </Button>
+
+            <Button variant="contained" onClick={handleShowas}>
+              Show As
+            </Button>
           </Grid>
         )}
       </Grid>
+
+      <Dialog open={modalOpen} onClose={handleClose} maxWidth="md" fullWidth>
+        <DialogTitle>Questionnaire Response</DialogTitle>
+
+        <DialogContent>
+          <DialogContentText bgcolor={'#F2F2F2'}>
+            <pre ref={preRef}>{JSON.stringify(questionnaireResponse, null, 2)}</pre>
+          </DialogContentText>
+        </DialogContent>
+
+
+        <DialogActions >
+          <Button variant="contained" onClick={handleCopyToClipboard} color="primary">
+            Copy to Clipboard
+          </Button>
+          <Button variant="contained" onClick={handleClose} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+
+      </Dialog>
     </Container>
   );
 };
