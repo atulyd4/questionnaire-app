@@ -18,7 +18,6 @@ import {
   DialogContentText,
   DialogActions
 } from '@mui/material';
-
 const formData = hdfc_data?.item;
 
 const DynamicForm = ({ data, formState, handleChange }) => {
@@ -210,6 +209,9 @@ const App = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState(null);
   const preRef = useRef(null);
+  const [modalOpen2, setModalOpen2] = useState(false);
+  const [link, setLink] = useState('');
+
 
   const handleChange = (linkId, value) => {
     setFormState((prevState) => ({
@@ -286,11 +288,11 @@ const App = () => {
   };
 
 
-  const handleSubmit = () => {
-    const questionnaireResponse = generateQuestionnaireResponse();
-    console.log('Questionnaire Response:', JSON.stringify(questionnaireResponse, null, 2));
-  };
-  const handleShowas = () => {
+  // const handleSubmit = () => {
+  //   const questionnaireResponse = generateQuestionnaireResponse();
+  //   console.log('Questionnaire Response:', JSON.stringify(questionnaireResponse, null, 2));
+  // };
+  const handlePreview = () => {
     const response = generateQuestionnaireResponse();
     setQuestionnaireResponse(response);
     setModalOpen(true);
@@ -308,6 +310,23 @@ const App = () => {
       console.error('Failed to copy: ', err);
     });
   };
+
+  const handleSubmit = () => {
+    const response = generateQuestionnaireResponse();
+    const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+
+    // Create a URL for the Blob
+    const url = URL.createObjectURL(blob);
+
+    setLink(url);
+    setModalOpen2(true);
+  };
+
+  const handleClose2 = () => {
+    setModalOpen2(false);
+    setLink('')
+  };
+
 
   return (
     <Container>
@@ -331,19 +350,21 @@ const App = () => {
           </Grid>
         ) : (
           <Grid item>
+            <Button variant="contained" onClick={handlePreview}>
+              Preview
+            </Button>
+
             <Button variant="contained" onClick={handleSubmit}>
               Submit
             </Button>
 
-            <Button variant="contained" onClick={handleShowas}>
-              Show As
-            </Button>
+
           </Grid>
         )}
       </Grid>
 
       <Dialog open={modalOpen} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle>Questionnaire Response</DialogTitle>
+        <DialogTitle>FHIR SDC QuestionnaireResponse Content</DialogTitle>
 
         <DialogContent>
           <DialogContentText bgcolor={'#F2F2F2'}>
@@ -362,7 +383,32 @@ const App = () => {
         </DialogActions>
 
       </Dialog>
-    </Container>
+
+      <Dialog open={modalOpen2} onClose2={handleClose2} maxWidth="md" fullWidth>
+        <DialogTitle>Save Results</DialogTitle>
+
+        <DialogContent>
+          <DialogContentText bgcolor={'#F2F2F2'}>
+            Save succeeded.
+            <p> Created {
+              <a href={link} target="_blank" rel="noopener noreferrer">
+                QuestionnaireResponse
+              </a>
+            }</p>
+
+
+          </DialogContentText>
+        </DialogContent>
+
+        <DialogActions >
+
+          <Button variant="contained" onClick={handleClose2} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+
+      </Dialog>
+    </Container >
   );
 };
 
