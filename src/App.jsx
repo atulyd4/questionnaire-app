@@ -2,6 +2,8 @@
 // App.js
 import React, { useRef, useState } from 'react';
 import hdfc_data from './hdfc_data';
+import covid_data from './covid_data';
+
 import {
   Container,
   Typography,
@@ -18,7 +20,8 @@ import {
   DialogContentText,
   DialogActions
 } from '@mui/material';
-const formData = hdfc_data?.item;
+const formData = covid_data?.item;
+const Data1 = covid_data
 
 const DynamicForm = ({ data, formState, handleChange }) => {
 
@@ -66,6 +69,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             required={required}
             fullWidth
             margin="normal"
+            color="secondary"
             value={formState[linkId] || ''}
             onChange={handleFieldChange}
           />
@@ -80,6 +84,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             required={required}
             fullWidth
             margin="normal"
+            color="secondary"
             value={formState[linkId] || ''}
             onChange={handleFieldChange}
           />
@@ -93,6 +98,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             required={required}
             fullWidth
             margin="normal"
+            color="secondary"
             value={formState[linkId] || ''}
             onChange={handleFieldChange}
           >
@@ -107,7 +113,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
         return (
           <FormControlLabel
             key={linkId}
-            control={<Checkbox checked={formState[linkId] || false} onChange={handleFieldChange} />}
+            control={<Checkbox color="secondary" checked={formState[linkId] || false} onChange={handleFieldChange} />}
             label={text}
             required={required}
           />
@@ -121,6 +127,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             required={required}
             fullWidth
             margin="normal"
+            color="secondary"
             value={formState[linkId] || ''}
             onChange={handleFieldChange}
           />
@@ -135,6 +142,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             required={required}
             fullWidth
             margin="normal"
+            color="secondary"
             value={formState[linkId] || ''}
             onChange={handleFieldChange}
           />
@@ -149,6 +157,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             required={required}
             fullWidth
             margin="normal"
+            color="secondary"
             value={formState[linkId] || ''}
             onChange={handleFieldChange}
           />
@@ -162,6 +171,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             required={required}
             fullWidth
             margin="normal"
+            color="secondary"
             value={formState[linkId] || ''}
             onChange={handleFieldChange}
           />
@@ -176,6 +186,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             required={required}
             fullWidth
             margin="normal"
+            color="secondary"
             value={formState[linkId] || ''}
             onChange={handleFieldChange}
           />
@@ -186,7 +197,7 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             <Typography marginRight={20}>
               {text}
             </Typography>
-            <Button>
+            <Button color='secondary'>
               <input type="file" onChange={(event) => handleChange(linkId, event.target.files[0])} />
             </Button>
           </Box>
@@ -209,8 +220,8 @@ const App = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState(null);
   const preRef = useRef(null);
-  const [modalOpen2, setModalOpen2] = useState(false);
-  const [link, setLink] = useState('');
+  // const [modalOpen2, setModalOpen2] = useState(false);
+  // const [link, setLink] = useState('');
 
 
   const handleChange = (linkId, value) => {
@@ -268,9 +279,7 @@ const App = () => {
     return {
       resourceType: "QuestionnaireResponse",
       meta: {
-        profile: [
-          "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaireresponse|3.0"
-        ],
+        profile: Data1?.meta?.profile[0],
         tag: [
           {
             code: "lformsVersion: 36.1.3"
@@ -280,10 +289,7 @@ const App = () => {
       status: "completed",
       authored: new Date().toISOString(),
       item: responseItems,
-      subject: {
-        reference: "Patient/e3b754c9-1e6c-4708-a8ae-851ddac7ca81",
-        display: "Jackie Bode"
-      }
+
     };
   };
 
@@ -313,50 +319,86 @@ const App = () => {
 
   const handleSubmit = () => {
     const response = generateQuestionnaireResponse();
-    const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+    console.log('Questionnaire Response:', JSON.stringify(response, null, 2));
 
-    // Create a URL for the Blob
-    const url = URL.createObjectURL(blob);
-
-    setLink(url);
-    setModalOpen2(true);
+    // const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+    // const url = URL.createObjectURL(blob);
+    // setLink(url);
+    // setModalOpen2(true);
   };
 
-  const handleClose2 = () => {
-    setModalOpen2(false);
-    setLink('')
-  };
+  // const handleClose2 = () => {
+  //   setModalOpen2(false);
+  //   setLink('')
+  // };
 
 
   return (
     <Container>
-      <Typography variant="h4" gutterBottom>
+      <Typography marginTop={4} variant="h4" gutterBottom>
         {formData[page]?.text}
       </Typography>
       <DynamicForm data={formData[page]} formState={formState} handleChange={handleChange} />
       <Grid container spacing={2} justifyContent="space-between">
         {page > 0 && (
           <Grid item>
-            <Button variant="contained" onClick={handlePrevious}>
+            <Button
+              style={{
+                borderRadius: 35,
+                backgroundColor: "#9c27b0",
+                padding: "9px 30px",
+                fontSize: "15px",
+                marginTop: "35px"
+              }}
+              variant="contained" onClick={handlePrevious}>
               Previous
             </Button>
           </Grid>
         )}
         {page < formData.length - 1 ? (
           <Grid item>
-            <Button variant="contained" onClick={handleNext}>
+            <Button style={{
+              borderRadius: 35,
+              backgroundColor: "#9c27b0",
+              padding: "9px 30px",
+              fontSize: "15px",
+              marginTop: "35px",
+              marginBottom: "35px"
+            }} variant="contained" onClick={handleNext}>
               Continue
             </Button>
           </Grid>
         ) : (
           <Grid item>
-            <Button variant="contained" onClick={handlePreview}>
+            <Button style={{
+              borderRadius: 35,
+              backgroundColor: "#9c27b0",
+              padding: "9px 30px",
+              fontSize: "15px",
+              marginTop: "35px",
+              marginRight: "20px",
+
+            }}
+
+              variant="contained" onClick={handlePreview}>
               Preview
             </Button>
 
-            <Button variant="contained" onClick={handleSubmit}>
+            <Button style={{
+              borderRadius: 35,
+              backgroundColor: "#9c27b0",
+              padding: "9px 35px",
+              fontSize: "15px",
+              marginTop: "35px",
+
+
+
+            }}
+              className='example'
+              variant="contained" onClick={handleSubmit}>
               Submit
             </Button>
+
 
 
           </Grid>
@@ -374,19 +416,18 @@ const App = () => {
 
 
         <DialogActions >
-          <Button variant="contained" onClick={handleCopyToClipboard} color="primary">
+          <Button variant="contained" onClick={handleCopyToClipboard} color="secondary">
             Copy to Clipboard
           </Button>
-          <Button variant="contained" onClick={handleClose} color="primary">
+          <Button variant="contained" onClick={handleClose} color="secondary">
             Close
           </Button>
         </DialogActions>
 
       </Dialog>
 
-      <Dialog open={modalOpen2} onClose2={handleClose2} maxWidth="md" fullWidth>
+      {/* <Dialog open={modalOpen2} onClose2={handleClose2} maxWidth="md" fullWidth>
         <DialogTitle>Save Results</DialogTitle>
-
         <DialogContent>
           <DialogContentText bgcolor={'#F2F2F2'}>
             Save succeeded.
@@ -395,19 +436,14 @@ const App = () => {
                 QuestionnaireResponse
               </a>
             }</p>
-
-
           </DialogContentText>
         </DialogContent>
-
         <DialogActions >
-
           <Button variant="contained" onClick={handleClose2} color="primary">
             Close
           </Button>
         </DialogActions>
-
-      </Dialog>
+      </Dialog> */}
     </Container >
   );
 };
