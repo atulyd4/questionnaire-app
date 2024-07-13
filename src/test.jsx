@@ -1,5 +1,7 @@
 /* eslint-disable react/prop-types */
-import React, { useState, useEffect } from 'react';
+// App.js
+import React, { useRef, useState } from 'react';
+import hdfc_data from './hdfc_data';
 import covid_data from './covid_data';
 
 import {
@@ -12,55 +14,38 @@ import {
   Button,
   Grid,
   Box,
-  Dialog,
   DialogTitle,
+  Dialog,
   DialogContent,
   DialogContentText,
-  DialogActions,
-  LinearProgress
+  DialogActions
 } from '@mui/material';
-import { getallQuestion } from './api/quest';
-// const formData = covid_data?.item;
-// const Data1 = covid_data
+const formData = covid_data?.item;
+const Data1 = covid_data
 
-const DynamicForm = ({ data, formState, handleChange }) => {
-  const shouldRenderItem = (item) => {
-    if (item.enableWhen) {
-      return item.enableWhen.every((condition) => {
-        const questionId = condition.question.value;
-        const operator = condition.operator.value;
-        const answer = condition.answer.value || condition.answer.code.value;
-        const currentAnswer = formState[questionId];
-
-        switch (operator) {
-          case '=':
-            return currentAnswer === answer;
-          case '!=':
-            return currentAnswer !== answer;
-          case '>':
-            return currentAnswer > answer;
-          case '<':
-            return currentAnswer < answer;
-          case '>=':
-            return currentAnswer >= answer;
-          case '<=':
-            return currentAnswer <= answer;
-          default:
-            return false;
-        }
-      });
-    }
-    return true;
-  };
-
+const DynamicForm = ({ item, formState, handleChange }) => {
   const renderField = (item) => {
-    const { value: linkId } = item.linkId;
-    const { value: text } = item.text;
-    const { value: type } = item.type;
-    const required = item.required?.value || false;
-    const answerOption = item.answerOption || [];
+    const { linkId, text, type, answerOption, required, enableWhen } = item;
 
-    if (!shouldRenderItem(item)) return null;
+    // Function to handle conditional rendering
+    const shouldEnable = (condition) => {
+      const { question, operator, answerBoolean, answerCoding } = condition;
+      const value = formState[question];
+
+      switch (operator) {
+        case '=':
+          if (answerBoolean !== undefined) return value === answerBoolean;
+          if (answerCoding !== undefined) return value === answerCoding.code;
+          return false;
+        default:
+          return false;
+      }
+    };
+
+    if (enableWhen) {
+      const conditionsMet = enableWhen.every(shouldEnable);
+      if (!conditionsMet) return null;
+    }
 
     const handleFieldChange = (event) => {
       const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
@@ -68,6 +53,15 @@ const DynamicForm = ({ data, formState, handleChange }) => {
     };
 
     switch (type) {
+      case 'group':
+        return (
+          <div key={linkId}>
+            <Typography variant="h6" gutterBottom>
+              {text}
+            </Typography>
+            {item.item.map((subItem) => renderField(subItem))}
+          </div>
+        );
       case 'string':
         return (
           <TextField
@@ -110,8 +104,8 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             onChange={handleFieldChange}
           >
             {answerOption.map((option) => (
-              <MenuItem key={option.value.code.value} value={option.value.code.value}>
-                {option.value.display.value}
+              <MenuItem key={option.valueCoding.code} value={option.valueCoding.code}>
+                {option.valueCoding.display}
               </MenuItem>
             ))}
           </TextField>
@@ -139,13 +133,74 @@ const DynamicForm = ({ data, formState, handleChange }) => {
             onChange={handleFieldChange}
           />
         );
-      case 'group':
+      case 'dateTime':
         return (
-          <Box key={linkId} marginBottom={2}>
-            <Typography variant="h6" gutterBottom>
+          <TextField
+            key={linkId}
+            label={text}
+            type="datetime-local"
+            InputLabelProps={{ shrink: true }}
+            required={required}
+            fullWidth
+            margin="normal"
+            color="secondary"
+            value={formState[linkId] || ''}
+            onChange={handleFieldChange}
+          />
+        );
+      case 'time':
+        return (
+          <TextField
+            key={linkId}
+            label={text}
+            type="time"
+            InputLabelProps={{ shrink: true }}
+            required={required}
+            fullWidth
+            margin="normal"
+            color="secondary"
+            value={formState[linkId] || ''}
+            onChange={handleFieldChange}
+          />
+        );
+      case 'url':
+        return (
+          <TextField
+            key={linkId}
+            label={text}
+            type="url"
+            required={required}
+            fullWidth
+            margin="normal"
+            color="secondary"
+            value={formState[linkId] || ''}
+            onChange={handleFieldChange}
+          />
+        );
+      case 'decimal':
+        return (
+          <TextField
+            key={linkId}
+            label={text}
+            type="number"
+            inputProps={{ step: "0.1" }}
+            required={required}
+            fullWidth
+            margin="normal"
+            color="secondary"
+            value={formState[linkId] || ''}
+            onChange={handleFieldChange}
+          />
+        );
+      case 'attachment':
+        return (
+          <Box display={'flex'} flexDirection={'row'} marginTop={1} marginBottom={1} key={linkId}>
+            <Typography marginRight={20}>
               {text}
             </Typography>
-            {item.item.map(renderField)}
+            <Button color='secondary'>
+              <input type="file" onChange={(event) => handleChange(linkId, event.target.files[0])} />
+            </Button>
           </Box>
         );
       default:
@@ -155,29 +210,19 @@ const DynamicForm = ({ data, formState, handleChange }) => {
 
   return (
     <form>
-      {data.map(renderField)}
+      {renderField(item)}
     </form>
   );
 };
 
+
 const App = () => {
   const [formState, setFormState] = useState({});
-  const [formData, setFormData] = useState(null);
-  const [Data1, setData1] = useState(null);
-  const [page, setPage] = useState(0);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState(null);
-
-  // set data which is fetched from api
-
-  useEffect(() => {
-    getallQuestion().then(
-      (data) => {
-        setData1(data.data[0])
-        setFormData(data.data[0].item);
-      }
-    );
-  }, []);
+  const preRef = useRef(null);
 
   const handleChange = (linkId, value) => {
     setFormState((prevState) => ({
@@ -187,14 +232,20 @@ const App = () => {
   };
 
   const handleNext = () => {
-    if (page < formData.length - 1) {
-      setPage(page + 1);
+    if (currentQuestionIndex < formData[currentSectionIndex].item.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else if (currentSectionIndex < formData.length - 1) {
+      setCurrentSectionIndex(currentSectionIndex + 1);
+      setCurrentQuestionIndex(0);
     }
   };
 
   const handlePrevious = () => {
-    if (page > 0) {
-      setPage(page - 1);
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    } else if (currentSectionIndex > 0) {
+      setCurrentSectionIndex(currentSectionIndex - 1);
+      setCurrentQuestionIndex(formData[currentSectionIndex - 1].item.length - 1);
     }
   };
 
@@ -202,21 +253,18 @@ const App = () => {
     const responseItems = formData.map((section) => {
       const answeredItems = section.item
         .map((item) => {
-          const { value: linkId } = item.linkId;
-          const { value: text } = item.text;
-          const { value: type } = item.type;
-          const valueKey = `value${type.charAt(0).toUpperCase() + type.slice(1)}`;
-          const value = formState[linkId];
+          const valueKey = `value${item.type.charAt(0).toUpperCase() + item.type.slice(1)}`;
+          const value = formState[item.linkId];
 
           if (!value) return null;
 
           return {
-            linkId: linkId,
-            text: text,
+            linkId: item.linkId,
+            text: item.text,
             answer: [{
-              [valueKey]: type === 'choice' ? {
+              [valueKey]: item.type === 'choice' ? {
                 code: value,
-                display: item.answerOption.find(opt => opt.value.code.value === value)?.value.display.value
+                display: item.answerOption.find(opt => opt.valueCoding.code === value)?.valueCoding.display
               } : value
             }]
           };
@@ -226,8 +274,8 @@ const App = () => {
       if (answeredItems.length === 0) return null;
 
       return {
-        linkId: section.linkId.value,
-        text: section.text.value,
+        linkId: section.linkId,
+        text: section.text,
         item: answeredItems
       };
     }).filter(Boolean);
@@ -272,20 +320,20 @@ const App = () => {
     console.log('Questionnaire Response:', JSON.stringify(response, null, 2));
   };
 
-  if (!formData) {
-    return (
-      <LinearProgress />
-    );
-  }
+  const currentItem = formData[currentSectionIndex].item[currentQuestionIndex];
 
   return (
     <Container>
       <Typography marginTop={4} variant="h4" gutterBottom>
-        {formData[page]?.text.value}
+        {formData[currentSectionIndex].text}
       </Typography>
-      <DynamicForm data={formData[page]?.item} formState={formState} handleChange={handleChange} />
+      <DynamicForm
+        item={currentItem}
+        formState={formState}
+        handleChange={handleChange}
+      />
       <Grid container spacing={2} justifyContent="space-between">
-        {page > 0 && (
+        {currentSectionIndex > 0 || currentQuestionIndex > 0 ? (
           <Grid item>
             <Button
               style={{
@@ -299,8 +347,8 @@ const App = () => {
               Previous
             </Button>
           </Grid>
-        )}
-        {page < formData.length - 1 ? (
+        ) : null}
+        {currentSectionIndex < formData.length - 1 || currentQuestionIndex < formData[currentSectionIndex].item.length - 1 ? (
           <Grid item>
             <Button style={{
               borderRadius: 35,
@@ -318,7 +366,7 @@ const App = () => {
             <Button style={{
               borderRadius: 35,
               backgroundColor: "#9c27b0",
-              padding: "9px 30px",
+              padding: "9px 35px",
               fontSize: "15px",
               marginTop: "35px",
               marginRight: "20px",
@@ -326,7 +374,6 @@ const App = () => {
               variant="contained" onClick={handlePreview}>
               Preview
             </Button>
-
             <Button style={{
               borderRadius: 35,
               backgroundColor: "#9c27b0",
@@ -340,15 +387,14 @@ const App = () => {
           </Grid>
         )}
       </Grid>
-
       <Dialog open={modalOpen} onClose={handleClose} maxWidth="md" fullWidth>
         <DialogTitle>FHIR SDC QuestionnaireResponse Content</DialogTitle>
         <DialogContent>
           <DialogContentText bgcolor={'#F2F2F2'}>
-            <pre>{JSON.stringify(questionnaireResponse, null, 2)}</pre>
+            <pre ref={preRef}>{JSON.stringify(questionnaireResponse, null, 2)}</pre>
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
+        <DialogActions >
           <Button variant="contained" onClick={handleCopyToClipboard} color="secondary">
             Copy to Clipboard
           </Button>
